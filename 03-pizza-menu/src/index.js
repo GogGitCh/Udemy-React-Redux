@@ -116,13 +116,13 @@ function Pizza(prop) {
     console.log(name);
 
     return (
-        <li className="pizza">
-            <img src={photoName} alt={name} />
+        <li className={soldOut ? 'pizza sold-out' : 'pizza'}>
+            <img  src={photoName} alt={name} />
             <div>
                 <h3>{name}</h3>
                 <p>{ingredients}</p>
-                <p>Price:{price}</p>
-                <p>soldOut:{soldOut}</p>
+                <p></p>
+                <span className={soldOut ? 'soldOut' : ''}>{soldOut ? `soldOut` : `Price:${price}`}</span>
             </div>
         </li>
     );
