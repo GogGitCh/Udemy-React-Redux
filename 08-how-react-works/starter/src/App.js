@@ -39,7 +39,7 @@ function Tabbed({ content }) {
       </div>
 
       {activeTab <= 2 ? (
-        <TabContent item={content.at(activeTab)} />
+        <TabContent key={content[activeTab].summary} item={content.at(activeTab)} />
       ) : (
         <DifferentContent />
       )}
@@ -98,3 +98,4 @@ function DifferentContent() {
     </div>
   );
 }
+
