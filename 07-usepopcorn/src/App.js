@@ -1,4 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// const OMDB_KEY = "ecc10762";
+const OMDB_KEY = "17ef1d3f";
+
+const OMDB_API_URL = `http://www.omdbapi.com/?apikey=${OMDB_KEY}&`;
+// const OMDB_API_URL = 'http://www.omdbapi.com/?i=tt3896198&apikey=ecc10762';
+// const OMDB_API_URL = 'http://www.omdbapi.com/?i=tt3896198&apikey=17ef1d3f';
+
+const OMDB_API_POSTER = `http://img.omdbapi.com/?apikey=${OMDB_KEY}&`;
 
 const tempMovieData = [
     {
@@ -46,8 +55,24 @@ const average = (arr) =>
     arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
-    const [movies, setMovies] = useState(tempMovieData);
-    const [watched, setWatched] = useState(tempWatchedData);
+    // const [movies, setMovies] = useState(tempMovieData);
+    // const [watched, setWatched] = useState(tempWatchedData);
+    const [movies, setMovies] = useState([]);
+    const [watched, setWatched] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const query = "interstellar";
+
+    useEffect(() => {
+        async function fetchMovies() {
+            setIsLoading(true);
+            const res = await fetch(OMDB_API_URL + "s=" + query);
+            const data = await res.json();
+            setMovies(data.Search);
+            setIsLoading(false);
+        }
+        fetchMovies();
+    }, []);
+
     return (
         <>
             <Nav>
@@ -56,7 +81,7 @@ export default function App() {
             </Nav>
             <Main>
                 <Box>
-                    <MovieList movies={movies} />
+                    {isLoading ? <Loader/> : <MovieList movies={movies} />}
                 </Box>
                 <Box>
                     <WhatchedSummery watched={watched} />
@@ -66,6 +91,10 @@ export default function App() {
             </Main>
         </>
     );
+}
+
+function Loader(params) {
+    return <p className="loader">Loading...</p>
 }
 
 function Nav({ children }) {
