@@ -78,15 +78,18 @@ export default function App() {
     }
 
     function handleDeleteWatched(id) {
-        setWatched((watched) => watched.filter((movie)=> movie.imdbID !== id))
+        setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
     }
 
     useEffect(() => {
+        const controller = new AbortController();
         async function fetchMovies() {
             try {
                 setIsLoading(true);
                 setError("");
-                const res = await fetch(OMDB_API_URL + "s=" + query);
+                const res = await fetch(OMDB_API_URL + "s=" + query, {
+                    signal: controller.signal,
+                });
 
                 if (!res.ok) {
                     throw new Error(
@@ -107,13 +110,20 @@ export default function App() {
                 }
 
                 setMovies(data.Search);
+                setError("")
             } catch (error) {
-                setError(error.message);
+                if (error !== "AbortError") {
+                    setError(error.message);
+                }
             } finally {
                 setIsLoading(false);
             }
         }
         fetchMovies();
+
+        return function () {
+            controller.abort();
+        };
     }, [query]);
 
     return (
@@ -145,7 +155,10 @@ export default function App() {
                     ) : (
                         <>
                             <WhatchedSummery watched={watched} />
-                            <WhatchedMovieList watched={watched} onDeleteWatched={handleDeleteWatched} />
+                            <WhatchedMovieList
+                                watched={watched}
+                                onDeleteWatched={handleDeleteWatched}
+                            />
                         </>
                     )}
                 </Box>
@@ -252,7 +265,11 @@ function WhatchedMovieList({ watched, onDeleteWatched }) {
     return (
         <ul className="list">
             {watched.map((movie) => (
-                <WhatchedMovie movie={movie} key={movie.imdbID} onDeleteWatched={onDeleteWatched} />
+                <WhatchedMovie
+                    movie={movie}
+                    key={movie.imdbID}
+                    onDeleteWatched={onDeleteWatched}
+                />
             ))}
         </ul>
     );
@@ -277,7 +294,12 @@ function WhatchedMovie({ movie, onDeleteWatched }) {
                     <span>{movie.runtime} min</span>
                 </p>
 
-                <button className="btn-delete" onClick={()=>onDeleteWatched(movie.imdbID)}>X</button>
+                <button
+                    className="btn-delete"
+                    onClick={() => onDeleteWatched(movie.imdbID)}
+                >
+                    X
+                </button>
             </div>
         </li>
     );
@@ -317,7 +339,9 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     const [isLoading, setIsLoading] = useState(false);
     const [userRating, setUserRating] = useState("");
     const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
-    const watchedUserRating = watched.find(movie=>movie.imdbID === selectedId)?.userRating
+    const watchedUserRating = watched.find(
+        (movie) => movie.imdbID === selectedId
+    )?.userRating;
     const {
         Title: title,
         Year: year,
@@ -355,6 +379,14 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
         }
         getMovieDetails();
     }, [selectedId]);
+
+    useEffect(() => {
+        document.title = title ? `Movie | ${title}` : "usePopcorn";
+
+        return function cleanUpTitle() {
+            document.title = "usePopcorn";
+        };
+    }, [title]);
 
     return (
         <div className="details">
@@ -397,7 +429,10 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
                                     )}
                                 </>
                             ) : (
-                                <p>⭐You have already rated this movie - {watchedUserRating}/10</p>
+                                <p>
+                                    ⭐You have already rated this movie -{" "}
+                                    {watchedUserRating}/10
+                                </p>
                             )}
                         </div>
                         <p>
