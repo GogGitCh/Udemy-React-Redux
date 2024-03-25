@@ -73,6 +73,12 @@ export default function App() {
         setSelectedId(null);
     }
 
+    function handleAddWatched(movie) {
+        
+        setWatched((watched) => [...watched, movie]);
+
+    }
+
     useEffect(() => {
         async function fetchMovies() {
             try {
@@ -131,6 +137,7 @@ export default function App() {
                         <MovieDetails
                             selectedId={selectedId}
                             onCloseMovie={handleCloseMovie}
+                            onAddWatched={handleAddWatched}
                         />
                     ) : (
                         <>
@@ -208,70 +215,6 @@ function Box({ children }) {
 //     );
 // }
 
-function MovieDetails({ selectedId, onCloseMovie }) {
-    const [movie, setMovie] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
-    const {
-        Title: title,
-        Year: year,
-        Poster: poster,
-        Runtime: runtime,
-        imdbRating,
-        Plot: plot,
-        Released: released,
-        Actors: actors,
-        Director: director,
-        Genre: genre,
-    } = movie;
-    useEffect(() => {
-        async function getMovieDetails() {
-            setIsLoading(true);
-            const res = await fetch(OMDB_API_URL + "i=" + selectedId);
-            const data = await res.json();
-            setMovie(data);
-            setIsLoading(false);
-        }
-        getMovieDetails();
-    }, [selectedId]);
-
-    return (
-        <div className="details">
-            {isLoading ? (
-                <Loader />
-            ) : (
-                <>
-                    <header>
-                        <button className="btn-back" onClick={onCloseMovie}>
-                            &larr;
-                        </button>
-                        <img src={poster} alt={`Poster of ${title}`} />
-                        <div className="details-overview">
-                            <h2>{title}</h2>
-                            <p>
-                                {released} &bull; {runtime}
-                            </p>
-                            <p>
-                                <span>🌟</span>
-                                {imdbRating} IMDB rating
-                            </p>
-                        </div>
-                    </header>
-                    <section>
-                        <div className="rating">
-                            <StarRating maxRating={10} size={24} />
-                        </div>
-                        <p>
-                            <em>{plot}</em>
-                        </p>
-                        <p>Starring {actors}</p>
-                        <p>Directed by {director}</p>
-                    </section>
-                </>
-            )}
-        </div>
-    );
-}
-
 function WhatchedSummery({ watched }) {
     const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
     const avgUserRating = average(watched.map((movie) => movie.userRating));
@@ -307,21 +250,7 @@ function WhatchedMovieList({ watched }) {
         <ul className="list">
             {watched.map((movie) => (
                 <WhatchedMovie movie={movie} key={movie.imdbID} />
-            ))}
-        </ul>
-    );
-}
-
-function MovieList({ movies, onSlelectMovie }) {
-    return (
-        <ul className="list list-movies">
-            {movies?.map((movie) => (
-                <Movie
-                    onSlelectMovie={onSlelectMovie}
-                    key={movie.imdbID}
-                    movie={movie}
-                />
-            ))}
+                ))}
         </ul>
     );
 }
@@ -329,7 +258,7 @@ function MovieList({ movies, onSlelectMovie }) {
 function WhatchedMovie({ movie }) {
     return (
         <li key={movie.imdbID}>
-            <img src={movie.Poster} alt={`${movie.Title} poster`} />
+            <img src={movie.poster} alt={`${movie.title} poster`} />
             <h3>{movie.Title}</h3>
             <div>
                 <p>
@@ -349,6 +278,21 @@ function WhatchedMovie({ movie }) {
     );
 }
 
+
+function MovieList({ movies, onSlelectMovie }) {
+    return (
+        <ul className="list list-movies">
+            {movies?.map((movie) => (
+                <Movie
+                    onSlelectMovie={onSlelectMovie}
+                    key={movie.imdbID}
+                    movie={movie}
+                />
+            ))}
+        </ul>
+    );
+}
+
 function Movie({ movie, onSlelectMovie }) {
     return (
         <li key={movie.imdbID} onClick={() => onSlelectMovie(movie.imdbID)}>
@@ -361,6 +305,87 @@ function Movie({ movie, onSlelectMovie }) {
                 </p>
             </div>
         </li>
+    );
+}
+
+function MovieDetails({ selectedId, onCloseMovie, onAddWatched }) {
+    const [movie, setMovie] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [userRating, setUserRating] = useState('');
+    const {
+        Title: title,
+        Year: year,
+        Poster: poster,
+        Runtime: runtime,
+        imdbRating,
+        Plot: plot,
+        Released: released,
+        Actors: actors,
+        Director: director,
+        Genre: genre,
+    } = movie;
+
+    function handleAdd() {
+        const newWatchedMovie = {
+            imdbID:selectedId,
+            title,
+            year,
+            poster,
+            imdbRating:Number(imdbRating),
+            runtime:Number(runtime.split(" ").at(0)),
+            userRating
+        }
+        onAddWatched(newWatchedMovie);
+        onCloseMovie()
+    }
+
+    useEffect(() => {
+        async function getMovieDetails() {
+            setIsLoading(true);
+            const res = await fetch(OMDB_API_URL + "i=" + selectedId);
+            const data = await res.json();
+            setMovie(data);
+            setIsLoading(false);
+        }
+        getMovieDetails();
+    }, [selectedId]);
+
+    return (
+        <div className="details">
+            {isLoading ? (
+                <Loader />
+            ) : (
+                <>
+                    <header>
+                        <button className="btn-back" onClick={onCloseMovie}>
+                            &larr;
+                        </button>
+                        <img src={poster} alt={`Poster of ${title}`} />
+                        <div className="details-overview">
+                            <h2>{title}</h2>
+                            <p>
+                                {released} &bull; {runtime}
+                            </p>
+                            <p>
+                                <span>🌟</span>
+                                {imdbRating} IMDB rating
+                            </p>
+                        </div>
+                    </header>
+                    <section>
+                        <div className="rating">
+                            <StarRating maxRating={10} size={24} onSetRating={setUserRating} />
+                            {userRating > 0 && (<button className="btn-add" onClick={handleAdd}>+ Add to list</button>)}
+                        </div>
+                        <p>
+                            <em>{plot}</em>
+                        </p>
+                        <p>Starring {actors}</p>
+                        <p>Directed by {director}</p>
+                    </section>
+                </>
+            )}
+        </div>
     );
 }
 
