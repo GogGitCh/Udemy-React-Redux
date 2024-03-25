@@ -55,33 +55,63 @@ const average = (arr) =>
     arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
-    // const [movies, setMovies] = useState(tempMovieData);
-    // const [watched, setWatched] = useState(tempWatchedData);
+    const [query, setQuery] = useState("");
     const [movies, setMovies] = useState([]);
+    // const [movies, setMovies] = useState(tempMovieData);
     const [watched, setWatched] = useState([]);
+    // const [watched, setWatched] = useState(tempWatchedData);
     const [isLoading, setIsLoading] = useState(false);
-    const query = "interstellar";
+    const [error, setError] = useState("");
+    const [selectedId, setSelectedId] = useState(null);
 
     useEffect(() => {
         async function fetchMovies() {
-            setIsLoading(true);
-            const res = await fetch(OMDB_API_URL + "s=" + query);
-            const data = await res.json();
-            setMovies(data.Search);
-            setIsLoading(false);
+            try {
+                setIsLoading(true);
+                setError("");
+                console.log(OMDB_API_URL + "s=" + query);
+                const res = await fetch(OMDB_API_URL + "s=" + query);
+
+                if (!res.ok) {
+                    throw new Error(
+                        "Something went wrong with fetching movies - check internet connection"
+                    );
+                }
+
+                const data = await res.json();
+
+                if (data.Response === "False") {
+                    throw new Error("Movie not found!");
+                }
+
+                if(query.length < 2){
+                    setMovies([]);
+                    setError("");
+                    return
+                }
+
+                setMovies(data.Search);
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                setIsLoading(false);
+            }
         }
         fetchMovies();
-    }, []);
+    }, [query]);
 
     return (
         <>
             <Nav>
-                <Search />
+                <Search query={query} setQuery={setQuery} />
                 <NumResults movies={movies} />
             </Nav>
             <Main>
                 <Box>
-                    {isLoading ? <Loader/> : <MovieList movies={movies} />}
+                    {/* {isLoading ? <Loader /> : <MovieList movies={movies} />} */}
+                    {isLoading && <Loader />}
+                    {!isLoading && !error && <MovieList movies={movies} />}
+                    {error && <ErrorMessage message={error} />}
                 </Box>
                 <Box>
                     <WhatchedSummery watched={watched} />
@@ -93,8 +123,17 @@ export default function App() {
     );
 }
 
-function Loader(params) {
-    return <p className="loader">Loading...</p>
+function Loader() {
+    return <p className="loader">Loading...</p>;
+}
+
+function ErrorMessage({ message }) {
+    return (
+        <p className="error">
+            <span>⛔</span>
+            {message}
+        </p>
+    );
 }
 
 function Nav({ children }) {
@@ -146,6 +185,7 @@ function Box({ children }) {
 //         </div>
 //     );
 // }
+
 
 function WhatchedSummery({ watched }) {
     const avgImdbRating = average(watched.map((movie) => movie.imdbRating));
@@ -235,9 +275,7 @@ function Movie({ movie }) {
     );
 }
 
-function Search() {
-    const [query, setQuery] = useState("");
-
+function Search({ query, setQuery }) {
     return (
         <input
             className="search"
