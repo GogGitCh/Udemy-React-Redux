@@ -103,14 +103,8 @@ export default function App() {
                     throw new Error("Movie not found!");
                 }
 
-                if (query.length < 2) {
-                    setMovies([]);
-                    setError("");
-                    return;
-                }
-
                 setMovies(data.Search);
-                setError("")
+                setError("");
             } catch (error) {
                 if (error !== "AbortError") {
                     setError(error.message);
@@ -119,6 +113,14 @@ export default function App() {
                 setIsLoading(false);
             }
         }
+
+        if (query.length < 2) {
+            setMovies([]);
+            setError("");
+            return;
+        }
+
+        handleCloseMovie();
         fetchMovies();
 
         return function () {
@@ -387,6 +389,20 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
             document.title = "usePopcorn";
         };
     }, [title]);
+
+    useEffect(() => {
+        const callback = (e) => {
+            if (e.key === "Escape") {
+                onCloseMovie();
+            }
+        };
+
+        document.addEventListener("keydown", callback);
+
+        return () => {
+            document.removeEventListener("keydown", callback);
+        };
+    }, [onCloseMovie]);
 
     return (
         <div className="details">
